@@ -1513,11 +1513,13 @@ const ServerControlPage: React.FC = () => {
                       // 计算统计信息
                       const downloadValues = chartData.map(d => d.download);
                       const uploadValues = chartData.map(d => d.upload);
+                      const totalValues = chartData.map(d => d.download + d.upload);  // 每个时间点的总带宽
                       
                       const downloadAvg = downloadValues.reduce((a, b) => a + b, 0) / downloadValues.length;
                       const uploadAvg = uploadValues.reduce((a, b) => a + b, 0) / uploadValues.length;
                       const downloadMax = Math.max(...downloadValues);
                       const uploadMax = Math.max(...uploadValues);
+                      const totalMax = Math.max(...totalValues);  // ✅ 正确：每个时刻总带宽的最大值
                       const downloadCurrent = downloadValues[downloadValues.length - 1] || 0;
                       const uploadCurrent = uploadValues[uploadValues.length - 1] || 0;
                       
@@ -1532,12 +1534,17 @@ const ServerControlPage: React.FC = () => {
                       // 生成智能总结
                       const generateSummary = () => {
                         const totalAvg = downloadAvg + uploadAvg;
-                        const totalMax = downloadMax + uploadMax;
                         const periodText = mrtgPeriod === 'hourly' ? '过去1小时' :
                                          mrtgPeriod === 'daily' ? '过去24小时' :
                                          mrtgPeriod === 'weekly' ? '过去7天' :
                                          mrtgPeriod === 'monthly' ? '过去30天' : '过去1年';
-                        return `${periodText}，平均带宽 ${formatBandwidth(totalAvg)}（↓${formatBandwidth(downloadAvg)} ↑${formatBandwidth(uploadAvg)}），峰值 ${formatBandwidth(totalMax)}`;
+                        
+                        // 找到峰值发生的时刻
+                        const peakIndex = totalValues.indexOf(totalMax);
+                        const peakDownload = downloadValues[peakIndex];
+                        const peakUpload = uploadValues[peakIndex];
+                        
+                        return `${periodText}，平均带宽 ${formatBandwidth(totalAvg)}（↓${formatBandwidth(downloadAvg)} ↑${formatBandwidth(uploadAvg)}），峰值 ${formatBandwidth(totalMax)}（↓${formatBandwidth(peakDownload)} ↑${formatBandwidth(peakUpload)}）`;
                       };
 
                       return (
